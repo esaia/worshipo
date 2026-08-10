@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { TaskHeader } from '@/components/shared/task-header';
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { VersionForm } from '@/features/songs/components/version-form';
 import { EMPTY_VERSION_FORM } from '@/features/songs/schemas';
 import { getSongDetail } from '@/features/songs/services';
@@ -10,7 +10,7 @@ import { getSongDetail } from '@/features/songs/services';
 export const metadata: Metadata = { title: 'ახალი ვერსია', robots: { index: false } };
 
 export default async function NewVersionPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  await requireEditor();
 
   const { id } = await params;
   const song = await getSongDetail(id);

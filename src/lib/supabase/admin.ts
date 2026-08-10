@@ -13,7 +13,8 @@ import type { Database } from '@/types/database';
  *      equivalent, by design.
  *   2. Reading auth.users, which is not exposed to the anon key at all.
  *
- * Every call site must be behind `requireAdmin()`. The `server-only` import
+ * Every call site must be behind `requireAdmin()` — user management, not
+ * authoring: a co-admin must never reach this client. The `server-only` import
  * above turns an accidental client import into a build error rather than a
  * leaked key in the browser bundle.
  *

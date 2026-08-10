@@ -208,7 +208,7 @@ export type Database = {
       };
     };
     Enums: {
-      user_role: 'admin' | 'user';
+      user_role: 'admin' | 'co_admin' | 'user';
     };
     CompositeTypes: Record<never, never>;
   };

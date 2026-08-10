@@ -7,6 +7,7 @@ import { SongActions } from '@/features/songs/components/song-actions';
 import { SongArrangements } from '@/features/songs/components/version-switcher';
 import { VersionAdminList } from '@/features/songs/components/version-admin-list';
 import { getSongDetail } from '@/features/songs/services';
+import { canEdit } from '@/types/domain';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -28,6 +29,8 @@ export default async function SongDetailPage({ params }: Params) {
 
   if (!song) notFound();
 
+  const editor = canEdit(profile);
+
   return (
     <article className="space-y-6">
       <header className="flex items-start justify-between gap-3">
@@ -45,12 +48,12 @@ export default async function SongDetailPage({ params }: Params) {
           )}
         </div>
 
-        {profile?.role === 'admin' && <SongActions songId={song.id} title={song.title} />}
+        {editor && <SongActions songId={song.id} title={song.title} />}
       </header>
 
       <SongArrangements song={song} />
 
-      {profile?.role === 'admin' && (
+      {editor && (
         <VersionAdminList
           songId={song.id}
           songVersionName={song.version_name}

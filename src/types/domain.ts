@@ -14,9 +14,31 @@ export type Profile = Pick<Tables<'profiles'>, 'id' | 'email' | 'name' | 'role'>
 
 export type Category = Pick<Tables<'categories'>, 'id' | 'name' | 'slug'>;
 
+/**
+ * Two privileges, deliberately not one.
+ *
+ * `canEdit` — may author the songbook. Admins and co-admins.
+ * `isAdmin`  — may administer accounts. Admins only.
+ *
+ * Everything a co-admin cannot do is user management, so every gate in the app
+ * is one of these two and never a raw `role === 'admin'` comparison: the raw
+ * comparison is the one that silently locks co-admins out of a new edit screen
+ * the day someone adds it.
+ */
 export function isAdmin(profile: Profile | null): boolean {
   return profile?.role === 'admin';
 }
+
+export function canEdit(profile: Profile | null): boolean {
+  return profile?.role === 'admin' || profile?.role === 'co_admin';
+}
+
+/** Georgian labels for the three roles, used by /users and /settings alike. */
+export const ROLE_LABELS: Record<UserRole, string> = {
+  admin: 'ადმინი',
+  co_admin: 'თანაადმინი',
+  user: 'წევრი',
+};
 
 /**
  * Discriminated result for Server Actions.

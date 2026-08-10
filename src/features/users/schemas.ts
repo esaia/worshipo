@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const roleSchema = z.enum(['admin', 'user']);
+/**
+ * Mirrors the `user_role` enum in the database. Order is deliberate — most
+ * privileged first — because the role picker renders in this order.
+ */
+export const roleSchema = z.enum(['admin', 'co_admin', 'user']);
 
 export const createUserSchema = z.object({
   email: z.string().min(1, 'ელფოსტა სავალდებულოა').email('შეიყვანეთ სწორი ელფოსტა'),

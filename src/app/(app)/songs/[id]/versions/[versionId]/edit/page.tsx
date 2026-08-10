@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { TaskHeader } from '@/components/shared/task-header';
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { VersionForm } from '@/features/songs/components/version-form';
 import { toVersionFormValues } from '@/features/songs/schemas';
 import { getSongDetail } from '@/features/songs/services';
@@ -14,7 +14,7 @@ export default async function EditVersionPage({
 }: {
   params: Promise<{ id: string; versionId: string }>;
 }) {
-  await requireAdmin();
+  await requireEditor();
 
   const { id, versionId } = await params;
   const song = await getSongDetail(id);

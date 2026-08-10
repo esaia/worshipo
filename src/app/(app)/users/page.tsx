@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { requireAdmin } from '@/features/auth/guards';
 import { UserRowActions } from '@/features/users/components/user-row-actions';
 import { listUsers } from '@/features/users/services';
+import { ROLE_LABELS } from '@/types/domain';
 
 export const metadata: Metadata = { title: 'მომხმარებლები' };
 
@@ -20,7 +21,7 @@ export default async function UsersPage() {
     <>
       <PageHeader
         title="მომხმარებლები"
-        description="საჯარო რეგისტრაცია არ არსებობს — ანგარიშები აქ იქმნება."
+        description="Google-ით შესული ყველა ანგარიში წევრია. უფლებები აქ ენიჭება."
         action={
           <Button asChild size="icon" aria-label="მომხმარებლის დამატება">
             <Link href="/users/new">
@@ -42,8 +43,18 @@ export default async function UsersPage() {
               </p>
               <p className="truncate text-sm text-muted-foreground">{user.email}</p>
             </div>
-            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-              {user.role === 'admin' ? 'ადმინი' : 'წევრი'}
+            {/* Outline for co_admin: privileged, but not the role that can
+                reach this screen. */}
+            <Badge
+              variant={
+                user.role === 'admin'
+                  ? 'default'
+                  : user.role === 'co_admin'
+                    ? 'outline'
+                    : 'secondary'
+              }
+            >
+              {ROLE_LABELS[user.role]}
             </Badge>
             <UserRowActions user={user} isSelf={user.id === admin.id} />
           </li>

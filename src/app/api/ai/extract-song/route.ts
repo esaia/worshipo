@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getSessionProfile } from '@/features/auth/guards';
 import { extractSongFromImage, ImportNotConfiguredError } from '@/features/ai-import/service';
+import { canEdit } from '@/types/domain';
 
 /**
  * A route handler rather than a Server Action.
@@ -17,10 +18,10 @@ const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export async function POST(request: Request) {
-  // `requireAdmin()` redirects, which is right for a page and wrong for fetch —
+  // `requireEditor()` redirects, which is right for a page and wrong for fetch —
   // an API caller needs a status code, not a 307 to /songs.
   const profile = await getSessionProfile();
-  if (profile?.role !== 'admin') {
+  if (!canEdit(profile)) {
     return NextResponse.json({ error: 'წვდომა აკრძალულია' }, { status: 403 });
   }
 

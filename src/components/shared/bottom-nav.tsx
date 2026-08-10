@@ -5,25 +5,26 @@ import { usePathname } from 'next/navigation';
 import { Library, LayoutGrid, LogIn, Settings, Tags, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import type { Profile } from '@/types/domain';
+import { canEdit, isAdmin, type Profile } from '@/types/domain';
 
 type NavItem = {
   href: string;
   label: string;
   icon: typeof Library;
   /**
-   * 'all'   — everyone, including visitors with no account
-   * 'auth'  — anyone signed in
-   * 'admin' — signed-in admins
-   * 'anon'  — visitors only
+   * 'all'    — everyone, including visitors with no account
+   * 'auth'   — anyone signed in, members included
+   * 'editor' — admins and co-admins
+   * 'admin'  — admins only; user management is the one thing co-admins lack
+   * 'anon'   — visitors only
    */
-  audience: 'all' | 'auth' | 'admin' | 'anon';
+  audience: 'all' | 'auth' | 'editor' | 'admin' | 'anon';
 };
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'მთავარი', icon: LayoutGrid, audience: 'all' },
   { href: '/songs', label: 'სიმღერები', icon: Library, audience: 'all' },
-  { href: '/categories', label: 'კატეგორიები', icon: Tags, audience: 'admin' },
+  { href: '/categories', label: 'კატეგორიები', icon: Tags, audience: 'editor' },
   { href: '/users', label: 'მომხმარებლები', icon: Users, audience: 'admin' },
   { href: '/settings', label: 'პარამეტრები', icon: Settings, audience: 'auth' },
   { href: '/login', label: 'შესვლა', icon: LogIn, audience: 'anon' },
@@ -49,19 +50,21 @@ function isTaskRoute(pathname: string) {
  * reach one-handed, which is how this app is actually used.
  *
  * `profile` is null for visitors, who are the majority: the songbook is public
- * and only admins ever sign in.
+ * and needs no account at all. A signed-in member sees the same tabs as a
+ * visitor plus settings — the editing tabs belong to admins and co-admins.
  */
 export function BottomNav({ profile }: { profile: Profile | null }) {
   const pathname = usePathname();
-  const isAdmin = profile?.role === 'admin';
   const items = NAV_ITEMS.filter((item) => {
     switch (item.audience) {
       case 'all':
         return true;
       case 'auth':
         return !!profile;
+      case 'editor':
+        return canEdit(profile);
       case 'admin':
-        return isAdmin;
+        return isAdmin(profile);
       case 'anon':
         return !profile;
     }

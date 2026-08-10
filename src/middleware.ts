@@ -29,7 +29,7 @@ function isPrivate(pathname: string) {
 /**
  * Session refresh + coarse routing only.
  *
- * This is NOT the authorization check. Role gates live in `requireAdmin()` at
+ * This is NOT the authorization check. Role gates live in `requireEditor()` / `requireAdmin()` at
  * the page level and in RLS at the data level, both of which hold even if this
  * matcher is misconfigured.
  */

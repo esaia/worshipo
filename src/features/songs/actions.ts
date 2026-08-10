@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { stripChords } from '@/lib/chords/strip';
 import { createClient } from '@/lib/supabase/server';
 import { actionError, actionOk, type ActionResult } from '@/types/domain';
@@ -10,9 +10,9 @@ import { songInputSchema, uuidSchema, versionInputSchema } from './schemas';
 
 /**
  * Writes go through the *user's* client, not the admin client. RLS enforces
- * admin-only writes at the database, so `requireAdmin()` here is a fast,
- * friendly failure rather than the only thing standing between a member and
- * the catalogue.
+ * editor-only writes at the database via `can_edit()`, so `requireEditor()`
+ * here is a fast, friendly failure rather than the only thing standing between
+ * a member and the catalogue.
  *
  * Ids are separate arguments rather than form fields: they are not user input,
  * they come from the route, and keeping them out of the schema means the form
@@ -63,7 +63,7 @@ function revalidateSong(id?: string) {
 // -----------------------------------------------------------------------------
 
 export async function createSong(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const admin = await requireAdmin();
+  const editor = await requireEditor();
 
   const parsed = songInputSchema.safeParse(input);
   if (!parsed.success) {
@@ -79,7 +79,7 @@ export async function createSong(input: unknown): Promise<ActionResult<{ id: str
       ...song,
       // Derived, never entered by hand: this is what search indexes.
       lyrics_plain: stripChords(song.lyrics_with_chords),
-      created_by: admin.id,
+      created_by: editor.id,
     })
     .select('id')
     .single();
@@ -97,7 +97,7 @@ export async function updateSong(
   songId: string,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin();
+  await requireEditor();
 
   const id = uuidSchema.safeParse(songId);
   if (!id.success) return actionError('არასწორი სიმღერა');
@@ -125,7 +125,7 @@ export async function updateSong(
 }
 
 export async function deleteSong(songId: string): Promise<ActionResult> {
-  await requireAdmin();
+  await requireEditor();
 
   const id = uuidSchema.safeParse(songId);
   if (!id.success) return actionError('არასწორი სიმღერა');
@@ -152,7 +152,7 @@ export async function createVersion(
   songId: string,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const admin = await requireAdmin();
+  const editor = await requireEditor();
 
   const id = uuidSchema.safeParse(songId);
   if (!id.success) return actionError('არასწორი სიმღერა');
@@ -169,7 +169,7 @@ export async function createVersion(
       ...parsed.data,
       song_id: id.data,
       lyrics_plain: stripChords(parsed.data.lyrics_with_chords),
-      created_by: admin.id,
+      created_by: editor.id,
     })
     .select('id')
     .single();
@@ -187,7 +187,7 @@ export async function updateVersion(
   songId: string,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin();
+  await requireEditor();
 
   const id = uuidSchema.safeParse(versionId);
   const song = uuidSchema.safeParse(songId);
@@ -211,7 +211,7 @@ export async function updateVersion(
 }
 
 export async function deleteVersion(versionId: string): Promise<ActionResult> {
-  await requireAdmin();
+  await requireEditor();
 
   const id = uuidSchema.safeParse(versionId);
   if (!id.success) return actionError('არასწორი ვერსია');

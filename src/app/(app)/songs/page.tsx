@@ -6,6 +6,7 @@ import { getSessionProfile } from '@/features/auth/guards';
 import { SongSearch } from '@/features/songs/components/song-search';
 import { parseSearchParams, SEARCH_PAGE_SIZE } from '@/features/songs/search';
 import { listCategories, searchSongs } from '@/features/songs/services';
+import { canEdit } from '@/types/domain';
 
 export const metadata: Metadata = { title: 'სიმღერები' };
 
@@ -31,7 +32,7 @@ export default async function SongsPage({
     searchSongs(params),
   ]);
 
-  const isAdmin = profile?.role === 'admin';
+  const editor = canEdit(profile);
 
   return (
     <>
@@ -39,7 +40,7 @@ export default async function SongsPage({
 
       <SongSearch categories={categories} initialParams={params} initialPage={page} />
 
-      {isAdmin && <AddSongFab />}
+      {editor && <AddSongFab />}
     </>
   );
 }

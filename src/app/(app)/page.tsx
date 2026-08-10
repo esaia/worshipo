@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getSessionProfile } from '@/features/auth/guards';
 import { createClient } from '@/lib/supabase/server';
+import { canEdit } from '@/types/domain';
 
 async function getCounts() {
   const supabase = await createClient();
@@ -23,7 +24,7 @@ export default async function HomePage() {
   // profile is null for visitors — this page is public.
   const [profile, counts] = await Promise.all([getSessionProfile(), getCounts()]);
   const firstName = profile?.name?.split(' ')[0];
-  const isAdmin = profile?.role === 'admin';
+  const editor = canEdit(profile);
 
   return (
     <>
@@ -50,9 +51,9 @@ export default async function HomePage() {
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        {isAdmin ? (
+        {editor ? (
           <>
-            {/* Admins land here to add, not to browse — so adding is the primary action. */}
+            {/* Editors land here to add, not to browse — so adding is the primary action. */}
             <Button asChild size="lg" className="flex-1">
               <Link href="/songs/new">
                 <Plus />

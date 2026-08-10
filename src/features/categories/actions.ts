@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { createClient } from '@/lib/supabase/server';
 import { actionError, actionOk, type ActionResult } from '@/types/domain';
 import {
@@ -21,7 +21,7 @@ function revalidateCategories() {
 }
 
 export async function createCategory(input: unknown): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin();
+  await requireEditor();
 
   const parsed = createCategorySchema.safeParse(input);
   if (!parsed.success) {
@@ -53,7 +53,7 @@ export async function createCategory(input: unknown): Promise<ActionResult<{ id:
  * than a change of meaning.
  */
 export async function renameCategory(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
+  await requireEditor();
 
   const parsed = updateCategorySchema.safeParse(input);
   if (!parsed.success) {
@@ -77,7 +77,7 @@ export async function renameCategory(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteCategory(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
+  await requireEditor();
 
   const parsed = deleteCategorySchema.safeParse(input);
   if (!parsed.success) return actionError('არასწორი მოთხოვნა');

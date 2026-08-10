@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { ROLE_LABELS, type UserRole } from '@/types/domain';
 import { createUser } from '../actions';
 import { createUserSchema, type CreateUserInput } from '../schemas';
 
@@ -23,6 +24,12 @@ function generatePassword(): string {
   const bytes = crypto.getRandomValues(new Uint32Array(14));
   return Array.from(bytes, (n) => alphabet[n % alphabet.length]).join('');
 }
+
+const ROLE_OPTIONS: { value: UserRole; hint: string }[] = [
+  { value: 'user', hint: 'მხოლოდ კითხვა და ძებნა' },
+  { value: 'co_admin', hint: 'სიმღერები და კატეგორიები — მომხმარებლების გარეშე' },
+  { value: 'admin', hint: 'ყველაფერი, მომხმარებლების მართვის ჩათვლით' },
+];
 
 export function CreateUserForm() {
   const router = useRouter();
@@ -106,26 +113,24 @@ export function CreateUserForm() {
 
       <fieldset className="space-y-2">
         <legend className="mb-2 text-sm font-medium">როლი</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {(['user', 'admin'] as const).map((value) => (
+        {/* Stacked, not a grid: three options with a sentence each do not fit
+            side by side on a phone. */}
+        <div className="grid gap-2">
+          {ROLE_OPTIONS.map(({ value, hint }) => (
             <button
               key={value}
               type="button"
               onClick={() => setValue('role', value, { shouldValidate: true })}
               aria-pressed={role === value}
               className={cn(
-                'min-h-14 rounded-lg border px-4 text-left transition-colors',
+                'min-h-14 rounded-lg border px-4 py-2 text-left transition-colors',
                 role === value
                   ? 'border-foreground bg-muted'
                   : 'border-border hover:border-muted-foreground',
               )}
             >
-              <span className="block text-sm font-medium">
-                {value === 'admin' ? 'ადმინი' : 'წევრი'}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                {value === 'admin' ? 'ყველაფრის მართვა შეუძლია' : 'მხოლოდ კითხვა და ძებნა'}
-              </span>
+              <span className="block text-sm font-medium">{ROLE_LABELS[value]}</span>
+              <span className="block text-xs text-muted-foreground">{hint}</span>
             </button>
           ))}
         </div>

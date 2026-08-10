@@ -5,6 +5,7 @@ import { Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { copyText } from '@/lib/clipboard';
 import { stripChords } from '@/lib/chords/strip';
 import { SheetLines } from './sheet-lines';
 
@@ -171,15 +172,15 @@ function CopyButton({ label, value, done }: { label: string; value: string; done
   }, [copied]);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
+    // `copyText` already falls back to the selection-based copy that plain-http
+    // origins need; a failure here means both routes were refused.
+    if (await copyText(value)) {
       setCopied(true);
       toast.success(done);
-    } catch {
-      // Denied permission, or an insecure origin — the API is unavailable on
-      // plain http, which is exactly how this gets opened over a local network.
-      toast.error('კოპირება ვერ მოხერხდა. მონიშნეთ ტექსტი და ხელით დააკოპირეთ.');
+      return;
     }
+
+    toast.error('კოპირება ვერ მოხერხდა. მონიშნეთ ტექსტი და ხელით დააკოპირეთ.');
   };
 
   return (

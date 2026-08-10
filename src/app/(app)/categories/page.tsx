@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 
 import { PageHeader } from '@/components/shared/page-header';
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { CategoryManager } from '@/features/categories/components/category-manager';
 import { listCategoriesWithCounts } from '@/features/songs/services';
 
 export const metadata: Metadata = { title: 'კატეგორიები', robots: { index: false } };
 
 export default async function CategoriesPage() {
-  await requireAdmin();
+  await requireEditor();
   const categories = await listCategoriesWithCounts();
 
   return (

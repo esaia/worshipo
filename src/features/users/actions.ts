@@ -8,12 +8,15 @@ import { actionError, actionOk, type ActionResult } from '@/types/domain';
 import { createUserSchema, deleteUserSchema, setRoleSchema } from './schemas';
 
 /**
- * Creates an account. There is no public sign-up: this action, behind
- * `requireAdmin()`, is the only path into the system.
+ * Creates a password account. Sign-up itself is open — anyone may sign in with
+ * Google and land on `role = 'user'` — so this exists for the accounts that
+ * cannot or should not use Google, and for handing someone a role at the same
+ * moment as their credentials.
  *
- * `requireAdmin()` runs first in every action here. A Server Action is a public
- * HTTP endpoint — the fact that only the admin UI renders a button that calls
- * it is worth exactly nothing.
+ * `requireAdmin()`, not `requireEditor()`, runs first in every action in this
+ * file: user management is precisely what a co-admin does not have. And a
+ * Server Action is a public HTTP endpoint — the fact that only the admin UI
+ * renders a button that calls it is worth exactly nothing.
  */
 export async function createUser(input: unknown): Promise<ActionResult<{ id: string }>> {
   await requireAdmin();

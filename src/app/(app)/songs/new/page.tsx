@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 
 import { TaskHeader } from '@/components/shared/task-header';
-import { requireAdmin } from '@/features/auth/guards';
+import { requireEditor } from '@/features/auth/guards';
 import { SongForm } from '@/features/songs/components/song-form';
 import { listCategories } from '@/features/songs/services';
 
 export const metadata: Metadata = { title: 'ახალი სიმღერა', robots: { index: false } };
 
 export default async function NewSongPage() {
-  await requireAdmin();
+  await requireEditor();
   const categories = await listCategories();
 
   return (

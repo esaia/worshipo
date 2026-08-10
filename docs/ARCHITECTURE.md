@@ -257,27 +257,55 @@ Indexes and why each exists:
 
 ## 5. Authentication
 
-Reading the songbook requires no account. Everything below is about the admin
-door, which is the only thing authentication protects.
+Reading the songbook requires no account. Signing in gets you a name in the
+corner; what it does *not* get you is any privilege at all. Privilege is granted
+afterwards, by an admin, and that separation is the whole design.
 
-### Provisioning flow
+### Three roles
+
+| Role | Songbook | Songs, versions, categories | Accounts |
+|---|---|---|---|
+| `user` (member) | read | — | — |
+| `co_admin` | read | create / edit / delete | — |
+| `admin` | read | create / edit / delete | promote, demote, delete |
+
+`co_admin` is `admin` minus user management, and nothing else. Because that is
+the only difference, the app never tests `role === 'admin'` to decide whether
+something is editable — it calls `canEdit()` / `requireEditor()`, and reserves
+`isAdmin()` / `requireAdmin()` for `/users` and the actions behind it. The raw
+comparison is the one that silently locks co-admins out of the next edit screen
+somebody adds.
+
+### Sign-up flow
 
 ```
-Admin fills "Add user" sheet
-        ↓  Server Action (admin-guarded)
-supabase.auth.admin.createUser({ email, password, app_metadata: { role } })
-        ↓  DB trigger
-profiles row materialised with role
+Anyone taps "Google-ით შესვლა"
+        ↓  supabase.auth.signInWithOAuth (browser: owns the PKCE verifier)
+Google consent → /auth/callback?code=...
+        ↓  Route Handler: exchangeCodeForSession, sets cookies
+auth.users row → handle_new_user trigger
         ↓
-Admin shares credentials out-of-band
-        ↓
-User signs in with password
+profiles row, role = 'user'
+        ↓  later, deliberately, from /users
+Admin promotes to co_admin or admin
 ```
 
-**Public registration is disabled in the Supabase dashboard** (Auth → Providers →
-Email → "Allow new users to sign up" = off). That is the real lock. The absence of a
-signup page is convenience, not security — the `/auth/v1/signup` endpoint would still
-be reachable with the anon key otherwise.
+**Sign-up is open, and that is safe because a member can do nothing an
+anonymous visitor cannot.** RLS grants `user` exactly the public read policies;
+every write is gated on `can_edit()`. The one thing that had to change when
+sign-up opened is `profiles`: a member reads only its own row now, because
+"authenticated may read all profiles" would hand the roster to everyone the
+moment everyone could sign in.
+
+Password sign-in stays alongside Google, for the bootstrapped first admin and
+for anyone without a Google account. `/users → +` still creates those accounts,
+role included.
+
+**Nothing self-promotes.** `role` is written only by `handle_new_user` (which
+defaults to `'user'` for OAuth, since an OAuth sign-up carries no
+`app_metadata.role`), by `sync_profile_role` from admin-API writes, or by an
+admin — and `profiles_guard_role` raises `42501` on any session that tries
+otherwise.
 
 **Role lives in `profiles.role` and is mirrored into `app_metadata`.**
 `app_metadata` is not user-writable and rides along in the JWT, so middleware can
@@ -380,9 +408,17 @@ export async function requireUser(): Promise<Profile> {
   return profile;
 }
 
+/** Songs, versions, categories. Admins and co-admins. */
+export async function requireEditor(): Promise<Profile> {
+  const profile = await requireUser();
+  if (!canEdit(profile)) redirect('/songs');
+  return profile;
+}
+
+/** User management. Admins only — a co-admin is bounced exactly as a member is. */
 export async function requireAdmin(): Promise<Profile> {
   const profile = await requireUser();
-  if (profile.role !== 'admin') redirect('/songs');
+  if (!isAdmin(profile)) redirect('/songs');
   return profile;
 }
 ```
@@ -464,18 +500,24 @@ Full SQL in `20260807000002_rls.sql`. The model:
 
 | Table | `select` | `insert` / `update` / `delete` |
 |---|---|---|
-| `profiles` | authenticated — **never `anon`** | update: self or admin (role change trigger-guarded); delete: admin; **no insert policy** |
-| `categories` | anon + authenticated | admin |
-| `songs` | anon + authenticated | admin |
-| `song_versions` | anon + authenticated | admin |
-| `song_categories` | anon + authenticated | admin |
-| `storage.objects` (`song-imports`) | admin | admin |
+| `profiles` | self or admin — **never `anon`** | update: self or admin (role change trigger-guarded); delete: admin; **no insert policy** |
+| `categories` | anon + authenticated | `can_edit()` |
+| `songs` | anon + authenticated | `can_edit()` |
+| `song_versions` | anon + authenticated | `can_edit()` |
+| `song_categories` | anon + authenticated | `can_edit()` |
+| `storage.objects` (`song-imports`) | `can_edit()` | `can_edit()` |
 
 Policies name `anon, authenticated` explicitly rather than using `to public`. The
 `public` role also covers `service_role` and any role added later; an explicit list is
 what makes "who can read this" answerable by reading one line.
 
-Four decisions to highlight:
+**`can_edit()` and `is_admin()` are two functions, not one.** Content policies
+call `can_edit()` (admin or co_admin); `profiles` update/delete and the role
+trigger call `is_admin()`. Splitting them at the database is what makes "a
+co-admin cannot touch accounts" true for a hand-rolled PostgREST request and not
+merely true of the UI.
+
+Four more decisions to highlight:
 
 **`is_admin()` is `SECURITY DEFINER`.** A policy on `profiles` that queries
 `profiles` re-enters RLS and recurses forever. `SECURITY DEFINER` breaks the cycle.
